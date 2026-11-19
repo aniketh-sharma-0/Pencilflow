@@ -20,17 +20,17 @@ jobs:
 
       - name: Build Unsigned App Bundle
         run: |
-          xcodebuild -project PencilFlow.xcodeproj \
+          xcodebuild \
+            -project PencilFlow.xcodeproj \
             -scheme PencilFlow \
             -configuration Release \
-            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
             -derivedDataPath build \
-            SWIFT_VERSION=5.0 \
-            SWIFT_STRICT_CONCURRENCY=minimal \
-            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_IDENTITY="" \
-            clean build
+            CODE_SIGNING_ALLOWED=NO \
+            AD_HOC_CODE_SIGNING_ALLOWED=YES \
+            build
 
       - name: Package into PencilFlow.ipa
         run: |
