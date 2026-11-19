@@ -1,0 +1,43 @@
+name: Build Unsigned IPA
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode Project
+        run: xcodegen generate
+
+      - name: Build Unsigned App Bundle
+        run: |
+          xcodebuild -project PencilFlow.xcodeproj \
+            -scheme PencilFlow \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            clean build
+
+      - name: Package into PencilFlow.ipa
+        run: |
+          mkdir -p Payload
+          cp -r build/Build/Products/Release-iphoneos/PencilFlow.app Payload/
+          zip -r PencilFlow.ipa Payload
+
+      - name: Upload PencilFlow.ipa
+        uses: actions/upload-artifact@v4
+        with:
+          name: PencilFlow-IPA
+          path: PencilFlow.ipa
