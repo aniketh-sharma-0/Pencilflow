@@ -2,10 +2,7 @@ import SwiftUI
 import UIKit
 import Network
 
-// ------------------------------------------------------------------------
-// UDP Sender to Blender Add-on (Port 9876)
-// ------------------------------------------------------------------------
-class BlenderUDPClient: ObservableObject {
+final class BlenderUDPClient: ObservableObject {
     @Published var laptopIP: String = UserDefaults.standard.string(forKey: "laptopIP") ?? "192.168.1.100"
     @Published var lastAction: String = "Ready — Hover or Double-Tap Pencil Pro"
     @Published var currentRollDegrees: Double = 0.0
@@ -21,7 +18,7 @@ class BlenderUDPClient: ObservableObject {
     func setupConnection() {
         connection?.cancel()
         let host = NWEndpoint.Host(laptopIP)
-        let port = NWEndpoint.Port(integerLiteral: 9876)
+        guard let port = NWEndpoint.Port(rawValue: 9876) else { return }
         connection = NWConnection(host: host, port: port, using: .udp)
         connection?.start(queue: .global(qos: .userInteractive))
     }
@@ -40,9 +37,6 @@ class BlenderUDPClient: ObservableObject {
     }
 }
 
-// ------------------------------------------------------------------------
-// Apple Pencil Pro Sensor Pad (Double-Tap, Squeeze & Barrel Roll)
-// ------------------------------------------------------------------------
 struct PencilSensorRepresentable: UIViewRepresentable {
     @ObservedObject var client: BlenderUDPClient
 
@@ -57,7 +51,7 @@ struct PencilSensorRepresentable: UIViewRepresentable {
     }
 }
 
-class PencilSensorUIView: UIView, UIPencilInteractionDelegate {
+final class PencilSensorUIView: UIView, UIPencilInteractionDelegate {
     var client: BlenderUDPClient?
     private var lastTriggerRollAngle: CGFloat?
     private var lastMenuTriggerTime: Date = .distantPast
@@ -69,12 +63,10 @@ class PencilSensorUIView: UIView, UIPencilInteractionDelegate {
         layer.borderWidth = 1.5
         layer.borderColor = UIColor.systemBlue.withAlphaComponent(0.5).cgColor
 
-        // 1. Apple Pencil Double-Tap & Squeeze Interaction
         let pencilInteraction = UIPencilInteraction()
         pencilInteraction.delegate = self
         addInteraction(pencilInteraction)
 
-        // 2. Apple Pencil Pro Barrel Roll Hover Gesture
         let hoverGesture = UIHoverGestureRecognizer(target: self, action: #selector(handleHover(_:)))
         hoverGesture.allowedTouchTypes = [NSNumber(value: UITouch.TouchType.pencil.rawValue)]
         addGestureRecognizer(hoverGesture)
@@ -84,14 +76,12 @@ class PencilSensorUIView: UIView, UIPencilInteractionDelegate {
         fatalError("init(coder:) has not been implemented")
     }
 
-    // Apple Pencil Double-Tap Handler -> Context-Aware Flip (Add <-> Subtract)
     func pencilInteractionDidTap(_ interaction: UIPencilInteraction) {
         let generator = UIImpactFeedbackGenerator(style: .medium)
         generator.impactOccurred()
         client?.sendEvent("double_tap")
     }
 
-    // Apple Pencil Pro Squeeze Handler (iOS 17.5+)
     @available(iOS 17.5, *)
     func pencilInteraction(_ interaction: UIPencilInteraction, didReceiveSqueeze squeeze: UIPencilInteraction.Squeeze) {
         if squeeze.phase == .ended {
@@ -99,7 +89,6 @@ class PencilSensorUIView: UIView, UIPencilInteractionDelegate {
         }
     }
 
-    // Apple Pencil Pro Barrel Roll Handler -> Opens Quick Menu when rotated > 35 degrees
     @objc func handleHover(_ gesture: UIHoverGestureRecognizer) {
         if #available(iOS 17.5, *) {
             let rollRadians = gesture.rollAngle
@@ -114,7 +103,6 @@ class PencilSensorUIView: UIView, UIPencilInteractionDelegate {
             } else if gesture.state == .changed {
                 if let startAngle = lastTriggerRollAngle {
                     let delta = abs(rollRadians - startAngle)
-                    // Trigger Quick Menu when barrel is rolled ~35 degrees (0.61 rad)
                     if delta > 0.61 && Date().timeIntervalSince(lastMenuTriggerTime) > 0.8 {
                         lastMenuTriggerTime = Date()
                         lastTriggerRollAngle = rollRadians
@@ -130,9 +118,6 @@ class PencilSensorUIView: UIView, UIPencilInteractionDelegate {
     }
 }
 
-// ------------------------------------------------------------------------
-// Main Slide-Over / Split-View Companion Interface
-// ------------------------------------------------------------------------
 struct ContentView: View {
     @StateObject private var client = BlenderUDPClient()
     @State private var ipInput: String = UserDefaults.standard.string(forKey: "laptopIP") ?? "192.168.1.100"
@@ -143,7 +128,6 @@ struct ContentView: View {
                 .font(.headline)
                 .padding(.top, 8)
 
-            // Laptop IP Input (Shown inside Blender's PencilFlow sidebar)
             HStack {
                 TextField("Laptop IP (e.g. 192.168.1.5)", text: $ipInput)
                     .textFieldStyle(.roundedBorder)
@@ -155,12 +139,11 @@ struct ContentView: View {
             }
             .padding(.horizontal)
 
-            // Live Sensor Pad for Apple Pencil Pro
             ZStack {
                 PencilSensorRepresentable(client: client)
 
                 VStack(spacing: 10) {
-                    Image(systemName: "applepencil.gen2")
+                    Image(systemName: "pencil.tip")
                         .font(.system(size: 36))
                         .foregroundColor(.blue)
                         .rotationEffect(.degrees(client.currentRollDegrees))
@@ -184,7 +167,6 @@ struct ContentView: View {
             }
             .padding(.horizontal)
 
-            // Manual Backup Buttons
             HStack(spacing: 12) {
                 Button {
                     client.sendEvent("double_tap")
