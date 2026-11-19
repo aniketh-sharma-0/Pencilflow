@@ -1,0 +1,23 @@
+name: PencilFlow
+options:
+  bundleIdPrefix: com.aniketh
+  deploymentTarget:
+    iOS: "17.5"
+targets:
+  PencilFlow:
+    type: application
+    platform: iOS
+    sources:
+      - Sources
+    settings:
+      base:
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
+        INFOPLIST_KEY_NSLocalNetworkUsageDescription: "PencilFlow sends Apple Pencil Pro gestures to Blender over local Wi-Fi."
+        PRODUCT_BUNDLE_IDENTIFIER: com.aniketh.pencilflow
+        MARKETING_VERSION: "1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        CODE_SIGN_STYLE: Manual
+        CODE_SIGNING_REQUIRED: NO
+        CODE_SIGNING_ALLOWED: NO
